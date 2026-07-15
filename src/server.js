@@ -16,6 +16,7 @@ async function api(req, res, path) {
     const b = await body(req); let u;
     if (path === '/api/register' && req.method === 'POST') return json(res, 201, await store.register(b));
     if (path === '/api/login' && req.method === 'POST') return json(res, 200, await store.login(b));
+    if (path === '/api/logout' && req.method === 'POST') return json(res, 200, await store.logout(token(req)));
     u = requireUser(req);
     if (path === '/api/me' && req.method === 'GET') return json(res, 200, u);
     if (path === '/api/profile' && req.method === 'PATCH') return json(res, 200, await store.updateProfile(u.id, b));
@@ -24,6 +25,9 @@ async function api(req, res, path) {
     if (path === '/api/chats' && req.method === 'POST') return json(res, 201, await store.createChat(u.id, b));
     if (path.match(/^\/api\/chats\/[^/]+\/messages$/) && req.method === 'GET') return json(res, 200, store.messages(u.id, path.split('/')[3]));
     if (path.match(/^\/api\/chats\/[^/]+\/messages$/) && req.method === 'POST') return json(res, 201, await store.sendMessage(u.id, path.split('/')[3], b));
+    if (path.match(/^\/api\/messages\/[^/]+$/) && req.method === 'PATCH') return json(res, 200, await store.editMessage(u.id, path.split('/')[3], b));
+    if (path.match(/^\/api\/messages\/[^/]+$/) && req.method === 'DELETE') return json(res, 200, await store.deleteMessage(u.id, path.split('/')[3]));
+    if (path.match(/^\/api\/messages\/[^/]+\/reactions$/) && req.method === 'POST') return json(res, 200, await store.reactToMessage(u.id, path.split('/')[3], b));
     if (path === '/api/channels' && req.method === 'GET') return json(res, 200, store.channels());
     if (path === '/api/channels' && req.method === 'POST') return json(res, 201, await store.createChannel(u.id, b));
     if (path.match(/^\/api\/channels\/[^/]+\/subscribe$/) && req.method === 'POST') return json(res, 200, await store.subscribe(u.id, path.split('/')[3]));

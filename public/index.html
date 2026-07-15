@@ -26,7 +26,7 @@
   <main id="app" class="app-shell hidden">
     <aside class="sidebar">
       <header class="sidebar-header">
-        <button class="icon-button">☰</button>
+        <button class="icon-button" onclick="logout()">⎋</button>
         <div>
           <strong>Social Network</strong>
           <span id="me" class="muted"></span>
@@ -87,6 +87,7 @@
       </div>
       <div id="posts" class="message-feed hidden"></div>
       <footer id="messageComposer" class="message-composer">
+        <div id="replyPreview" class="reply-preview hidden"></div>
         <input id="messageText" placeholder="Напишите сообщение…" />
         <input id="messageFile" placeholder="URL вложения" />
         <button onclick="sendMessage()">➤</button>

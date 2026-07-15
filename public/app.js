@@ -3,6 +3,11 @@ let selectedChat = null;
 let selectedChannel = null;
 let mode = 'chat';
 let me = null;
+let replyToId = '';
+let activeItemId = '';
+const toastStack = document.createElement('div');
+toastStack.className = 'toast-stack';
+document.body.appendChild(toastStack);
 
 const $ = id => document.getElementById(id);
 const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
@@ -17,7 +22,7 @@ const api = async (path, options = {}) => {
   return json;
 };
 
-function toast(message) { $('authMsg') ? $('authMsg').textContent = message : alert(message); }
+function toast(message) { const node = document.createElement('div'); node.className = 'toast'; node.textContent = message; toastStack.appendChild(node); setTimeout(() => node.remove(), 2600); if ($('authMsg')) $('authMsg').textContent = message; }
 function setActiveTitle(title, subtitle = '') { $('activeTitle').textContent = title; $('activeSubtitle').textContent = subtitle; }
 function showSection(id) {
   ['chatsPanel', 'channelsPanel', 'adminPanel'].forEach(panel => $(panel).classList.toggle('hidden', panel !== id));
@@ -31,6 +36,39 @@ function showComposer(nextMode) {
   $('messages').classList.toggle('hidden', nextMode !== 'chat');
   $('posts').classList.toggle('hidden', nextMode !== 'channel');
 }
+
+
+async function logout() {
+  try { await api('/api/logout', { method: 'POST' }); } catch {}
+  localStorage.removeItem('token');
+  token = '';
+  location.reload();
+}
+function setReply(id) {
+  replyToId = id;
+  $('replyPreview').textContent = `Ответ на сообщение ${id}`;
+  $('replyPreview').classList.remove('hidden');
+  messageText.focus();
+}
+function clearReply() { replyToId = ''; $('replyPreview').classList.add('hidden'); $('replyPreview').textContent = ''; }
+async function editMessage(id) {
+  const text = prompt('Редактировать сообщение');
+  if (text === null) return;
+  await api(`/api/messages/${id}`, { method: 'PATCH', body: JSON.stringify({ text }) });
+  toast('✏️ Сообщение обновлено');
+  openChat(selectedChat);
+}
+async function deleteMessage(id) {
+  if (!confirm('Удалить сообщение?')) return;
+  await api(`/api/messages/${id}`, { method: 'DELETE' });
+  toast('🗑️ Сообщение удалено');
+  openChat(selectedChat);
+}
+async function reactToMessage(id, emoji) {
+  await api(`/api/messages/${id}/reactions`, { method: 'POST', body: JSON.stringify({ emoji }) });
+  openChat(selectedChat);
+}
+const reactionHtml = message => ['👍','❤️','😂','🔥','👀'].map(emoji => `<button onclick="reactToMessage('${message.id}','${emoji}')">${emoji} ${message.reactions?.[emoji]?.length || ''}</button>`).join('');
 
 async function register() {
   try {
@@ -61,7 +99,7 @@ async function init() {
 async function saveProfile() {
   me = await api('/api/profile', { method: 'PATCH', body: JSON.stringify({ displayName: me.displayName, bio: bio.value }) });
   $('profileMeta').textContent = `@${me.username} · ${me.role}`;
-  alert('✅ Профиль сохранён');
+  toast('✅ Профиль сохранён');
 }
 async function findUsers() {
   const list = await api('/api/users?q=' + encodeURIComponent(search.value));
@@ -79,29 +117,34 @@ async function createChat() {
 async function loadChats() {
   const list = await api('/api/chats');
   chats.innerHTML = list.map(chat => `
-    <article class="item" onclick="openChat('${chat.id}')">
-      <div class="item-title"><span>💬 ${escapeHtml(chat.title)}</span><span>${chat.memberIds.length}</span></div>
+    <article class="item ${activeItemId === chat.id ? 'active-item' : ''}" onclick="openChat('${chat.id}')">
+      <div class="item-title"><span>💬 ${escapeHtml(chat.title)}</span><span>${chat.unreadCount ? `<b class='unread-badge'>${chat.unreadCount}</b>` : chat.memberIds.length}</span></div>
       <div class="muted">${escapeHtml(chat.id)}</div>
     </article>`).join('') || '<p class="muted">Пока нет чатов. Создайте первый ✨</p>';
 }
 async function openChat(id) {
   selectedChat = id;
+  activeItemId = id;
   selectedChannel = null;
+  clearReply();
   showComposer('chat');
   const list = await api(`/api/chats/${id}/messages`);
   setActiveTitle('💬 Чат', `${list.length} сообщений · ${id}`);
   messages.classList.toggle('empty-state', !list.length);
   messages.innerHTML = list.length ? list.map(message => `
     <article class="message-bubble">
+      ${message.replyToId ? `<div class="reply-preview">↩️ Ответ на ${escapeHtml(message.replyToId)}</div>` : ''}
       <div>${escapeHtml(message.text)}</div>
       ${message.attachmentUrl ? `<a href="${escapeHtml(message.attachmentUrl)}" target="_blank" rel="noreferrer">📎 Вложение</a>` : ''}
-      <div class="muted">${escapeHtml(message.createdAt)} · ${escapeHtml(message.id)}</div>
+      <div class="muted">${escapeHtml(message.createdAt)}${message.editedAt ? ' · edited' : ''} · ${escapeHtml(message.id)}</div>
+      <div class="message-actions">${reactionHtml(message)}<button onclick="setReply('${message.id}')">↩️ Ответить</button>${message.authorId === me.id && !message.deletedAt ? `<button onclick="editMessage('${message.id}')">✏️</button><button onclick="deleteMessage('${message.id}')">🗑️</button>` : ''}</div>
     </article>`).join('') : '<div>Напишите первое сообщение 👋</div>';
+  loadChats();
 }
 async function sendMessage() {
   if (!selectedChat) return alert('Сначала выберите чат');
-  await api(`/api/chats/${selectedChat}/messages`, { method: 'POST', body: JSON.stringify({ text: messageText.value, attachmentUrl: messageFile.value }) });
-  messageText.value = ''; messageFile.value = '';
+  await api(`/api/chats/${selectedChat}/messages`, { method: 'POST', body: JSON.stringify({ text: messageText.value, attachmentUrl: messageFile.value, replyToId }) });
+  messageText.value = ''; messageFile.value = ''; clearReply();
   openChat(selectedChat);
 }
 async function createChannel() {
@@ -122,6 +165,7 @@ async function loadChannels() {
 async function subscribe(id) { await api(`/api/channels/${id}/subscribe`, { method: 'POST' }); loadChannels(); loadNotifications(); }
 async function openChannel(id) {
   selectedChannel = id;
+  activeItemId = id;
   selectedChat = null;
   showComposer('channel');
   const list = await api(`/api/channels/${id}/posts`);
@@ -143,7 +187,7 @@ async function createPost() {
 }
 async function report() {
   await api('/api/reports', { method: 'POST', body: JSON.stringify({ targetType: targetType.value, targetId: targetId.value, reason: reason.value }) });
-  alert('🚨 Жалоба отправлена');
+  toast('🚨 Жалоба отправлена');
 }
 async function loadNotifications() {
   const list = await api('/api/notifications');

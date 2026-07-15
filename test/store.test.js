@@ -26,3 +26,24 @@ test('supports channels, subscriptions and posts', async () => {
   assert.equal(store.posts(channel.id)[0].id, post.id);
   assert.equal(store.notifications(subscriber.id).length, 1);
 });
+
+test('supports message editing, deletion, reactions, replies and logout', async () => {
+  const store = new Store('/tmp/social-network-test-' + Date.now() + '-3.json');
+  await store.load();
+  const owner = await store.register({ username: 'owner_three', password: 'password1' });
+  const friend = await store.register({ username: 'friend_three', password: 'password2' });
+  const login = await store.login({ username: 'owner_three', password: 'password1' });
+  const chat = await store.createChat(owner.id, { title: 'Product', memberIds: [friend.id] });
+  const first = await store.sendMessage(owner.id, chat.id, { text: 'Original' });
+  const reply = await store.sendMessage(friend.id, chat.id, { text: 'Reply', replyToId: first.id });
+  assert.equal(reply.replyToId, first.id);
+  assert.equal(store.chats(owner.id)[0].unreadCount, 1);
+  await store.reactToMessage(friend.id, first.id, { emoji: '🔥' });
+  assert.equal(store.messages(owner.id, chat.id).find(m => m.id === first.id).reactions['🔥'].length, 1);
+  await store.editMessage(owner.id, first.id, { text: 'Updated' });
+  assert.equal(store.messages(owner.id, chat.id).find(m => m.id === first.id).text, 'Updated');
+  await store.deleteMessage(owner.id, first.id);
+  assert.ok(store.messages(owner.id, chat.id).find(m => m.id === first.id).deletedAt);
+  await store.logout(login.token);
+  assert.equal(store.userByToken(login.token), undefined);
+});
