@@ -1,0 +1,20 @@
+let token=localStorage.token, selectedChat=null, selectedChannel=null, me=null;
+const $=id=>document.getElementById(id); const api=async(p,o={})=>{const r=await fetch(p,{...o,headers:{'content-type':'application/json',authorization:token?'Bearer '+token:'',...(o.headers||{})}});const j=await r.json();if(!r.ok)throw Error(j.error);return j};
+async function register(){try{await api('/api/register',{method:'POST',body:JSON.stringify({username:username.value,password:password.value,displayName:displayName.value})});authMsg.textContent='Готово, теперь войдите.'}catch(e){authMsg.textContent=e.message}}
+async function login(){try{const r=await api('/api/login',{method:'POST',body:JSON.stringify({username:username.value,password:password.value})});token=r.token;localStorage.token=token;await init()}catch(e){authMsg.textContent=e.message}}
+async function init(){if(!token)return;me=await api('/api/me');auth.classList.add('hidden');app.classList.remove('hidden');$('me').textContent=me.displayName+' @'+me.username+' ('+me.role+')';bio.value=me.bio||'';await Promise.all([loadChats(),loadChannels(),loadNotifications()])}
+async function saveProfile(){me=await api('/api/profile',{method:'PATCH',body:JSON.stringify({displayName:me.displayName,bio:bio.value})});alert('Профиль сохранён')}
+async function findUsers(){const list=await api('/api/users?q='+encodeURIComponent(search.value));users.innerHTML=list.map(u=>`<div class=item><b>${u.displayName}</b><div class=muted>@${u.username} · ${u.id}</div></div>`).join('')}
+async function createChat(){await api('/api/chats',{method:'POST',body:JSON.stringify({title:chatTitle.value,memberIds:chatMembers.value.split(',').map(x=>x.trim()).filter(Boolean)})});loadChats()}
+async function loadChats(){const list=await api('/api/chats');chats.innerHTML=list.map(c=>`<div class=item onclick="openChat('${c.id}')"><b>${c.title}</b><div class=muted>${c.id}</div></div>`).join('')}
+async function openChat(id){selectedChat=id;const list=await api(`/api/chats/${id}/messages`);messages.innerHTML='<h3>Сообщения</h3>'+list.map(m=>`<div class=item>${m.text}${m.attachmentUrl?`<div><a href="${m.attachmentUrl}">вложение</a></div>`:''}<div class=muted>${m.id}</div></div>`).join('')}
+async function sendMessage(){await api(`/api/chats/${selectedChat}/messages`,{method:'POST',body:JSON.stringify({text:messageText.value,attachmentUrl:messageFile.value})});messageText.value='';openChat(selectedChat)}
+async function createChannel(){await api('/api/channels',{method:'POST',body:JSON.stringify({title:channelTitle.value,description:channelDesc.value})});loadChannels()}
+async function loadChannels(){const list=await api('/api/channels');channels.innerHTML=list.map(c=>`<div class=item onclick="openChannel('${c.id}')"><b>${c.title}</b><p>${c.description||''}</p><button onclick="event.stopPropagation();subscribe('${c.id}')">Подписаться</button><div class=muted>${c.id}</div></div>`).join('')}
+async function subscribe(id){await api(`/api/channels/${id}/subscribe`,{method:'POST'});loadChannels()}
+async function openChannel(id){selectedChannel=id;const list=await api(`/api/channels/${id}/posts`);posts.innerHTML='<h3>Посты</h3>'+list.map(p=>`<div class=item>${p.text}${p.attachmentUrl?`<div><a href="${p.attachmentUrl}">вложение</a></div>`:''}<div class=muted>${p.id}</div></div>`).join('')}
+async function createPost(){await api(`/api/channels/${selectedChannel}/posts`,{method:'POST',body:JSON.stringify({text:postText.value,attachmentUrl:postFile.value})});postText.value='';openChannel(selectedChannel)}
+async function report(){await api('/api/reports',{method:'POST',body:JSON.stringify({targetType:targetType.value,targetId:targetId.value,reason:reason.value})});alert('Жалоба отправлена')}
+async function loadNotifications(){const list=await api('/api/notifications');notifications.innerHTML=list.map(n=>`<div class=item>${n.text}<div class=muted>${n.createdAt}</div></div>`).join('')}
+async function loadAdmin(){try{admin.textContent=JSON.stringify(await api('/api/admin'),null,2)}catch(e){admin.textContent=e.message}}
+init().catch(()=>localStorage.removeItem('token'));
