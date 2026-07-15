@@ -1,1 +1,14 @@
-{"scripts":{"start":"node src/server.js","test":"node --test"},"dependencies":{},"devDependencies":{},"engines":{"node":">=20"},"type":"module"}
+{
+  "scripts": {
+    "start": "node src/server.js",
+    "start:local": "node src/server.js --host 127.0.0.1",
+    "start:lan": "node src/server.js --host 0.0.0.0",
+    "test": "node --test"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "engines": {
+    "node": ">=20"
+  },
+  "type": "module"
+}

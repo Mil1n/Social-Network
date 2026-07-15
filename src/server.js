@@ -38,10 +38,22 @@ async function api(req, res, path) {
 
 export const server = createServer(async (req, res) => {
   const { pathname } = new URL(req.url, 'http://localhost');
+  if (pathname === '/api/health') return json(res, 200, { status: 'ok' });
   if (pathname.startsWith('/api/')) return api(req, res, pathname);
   const file = pathname === '/' ? 'index.html' : pathname.slice(1);
   try { const data = await readFile(join('public', file)); res.writeHead(200, { 'content-type': types[extname(file)] || 'application/octet-stream' }); res.end(data); }
   catch { res.writeHead(404); res.end('Not found'); }
 });
 
-if (process.argv[1]?.endsWith('server.js')) server.listen(process.env.PORT || 3000, () => console.log('Social Network running on http://localhost:' + (process.env.PORT || 3000)));
+if (process.argv[1]?.endsWith('server.js')) {
+  const port = Number(process.env.PORT || 3000);
+  const hostArgIndex = process.argv.indexOf('--host');
+  const hostArg = hostArgIndex === -1 ? undefined : process.argv[hostArgIndex + 1];
+  const host = hostArg || process.env.HOST || '0.0.0.0';
+  server.listen(port, host, () => {
+    const localHost = host === '0.0.0.0' ? 'localhost' : host;
+    console.log(`Social Network running:`);
+    console.log(`- Local:   http://${localHost}:${port}`);
+    if (host === '0.0.0.0') console.log(`- Network: http://<your-device-ip>:${port}`);
+  });
+}
