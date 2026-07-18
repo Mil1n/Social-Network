@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Private Social Network</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <main id="auth" class="auth-screen">
+    <section class="auth-card glass">
+      <div class="brand-badge">💬</div>
+      <h1>Личная социальная сеть</h1>
+      <p>Красивый Telegram‑style интерфейс для чатов, каналов, профилей и модерации.</p>
+      <label>Username<input id="username" placeholder="naprimer_alex" autocomplete="username" /></label>
+      <label>Имя<input id="displayName" placeholder="Алекс" /></label>
+      <label>Пароль<input id="password" type="password" placeholder="минимум 8 символов" autocomplete="current-password" /></label>
+      <div class="auth-actions">
+        <button onclick="register()">Создать аккаунт</button>
+        <button class="secondary" onclick="login()">Войти</button>
+      </div>
+      <p id="authMsg" class="status-text"></p>
+    </section>
+  </main>
+
+  <main id="app" class="app-shell hidden">
+    <aside class="sidebar">
+      <header class="sidebar-header">
+        <button class="icon-button" onclick="logout()" title="Выйти">⎋</button>
+        <button class="icon-button" onclick="toggleTheme()" title="Тема">◐</button>
+        <div>
+          <strong>Social Network</strong>
+          <span id="me" class="muted"></span>
+        </div>
+      </header>
+
+      <div class="search-wrap">
+        <span>🔎</span>
+        <input id="search" oninput="findUsers()" placeholder="Поиск людей" />
+      </div>
+      <div id="users" class="people-list"></div>
+      <h3 class="side-title">👥 Контакты</h3>
+      <div id="contacts" class="people-list"></div>
+
+      <nav class="tabs">
+        <button class="active" onclick="showSection('chatsPanel')">💬 Чаты</button>
+        <button onclick="showSection('channelsPanel')">📣 Каналы</button>
+        <button onclick="showSection('adminPanel')">🛡️ Модерация</button>
+      </nav>
+
+      <section id="chatsPanel" class="panel-section">
+        <div class="composer-card">
+          <input id="chatTitle" placeholder="Название чата" />
+          <input id="chatMembers" placeholder="ID участников через запятую" />
+          <button onclick="createChat()">+ Новый чат</button>
+        </div>
+        <div id="chats" class="list"></div>
+      </section>
+
+      <section id="channelsPanel" class="panel-section hidden">
+        <div class="composer-card">
+          <input id="channelTitle" placeholder="Название канала" />
+          <input id="channelDesc" placeholder="Описание канала" />
+          <button onclick="createChannel()">+ Новый канал</button>
+        </div>
+        <div id="channels" class="list"></div>
+      </section>
+
+      <section id="adminPanel" class="panel-section hidden">
+        <div class="composer-card">
+          <select id="targetType"><option>message</option><option>post</option><option>user</option></select>
+          <input id="targetId" placeholder="ID объекта" />
+          <input id="reason" placeholder="Причина жалобы" />
+          <button onclick="report()">🚨 Отправить жалобу</button>
+          <button class="secondary" onclick="loadAdmin()">👑 Админ-панель</button>
+        </div>
+      </section>
+    </aside>
+
+    <section class="chat-view">
+      <header class="chat-topbar">
+        <div class="avatar gradient">SN</div>
+        <div>
+          <h2 id="activeTitle">Выберите чат или канал</h2>
+          <p id="activeSubtitle" class="muted">Сообщения, публикации и вложения появятся здесь</p>
+        </div>
+      </header>
+      <div id="messages" class="message-feed empty-state">
+        <div>✨ Начните общение: создайте чат или откройте канал.</div>
+      </div>
+      <div id="posts" class="message-feed hidden"></div>
+      <footer id="messageComposer" class="message-composer">
+        <div id="replyPreview" class="reply-preview hidden"></div>
+        <input id="messageText" placeholder="Напишите сообщение…" />
+        <input id="messageFile" placeholder="URL вложения" />
+        <button onclick="sendMessage()">➤</button>
+      </footer>
+      <footer id="postComposer" class="message-composer hidden">
+        <textarea id="postText" placeholder="Текст публикации…"></textarea>
+        <input id="postFile" placeholder="URL вложения" />
+        <button onclick="createPost()">Опубликовать</button>
+      </footer>
+    </section>
+
+    <aside class="profile-panel">
+      <section class="profile-card glass">
+        <div class="avatar big gradient">ME</div>
+        <h2 id="profileName">Профиль</h2>
+        <p id="profileMeta" class="muted"></p>
+        <textarea id="bio" placeholder="Расскажите о себе"></textarea>
+        <button onclick="saveProfile()">Сохранить профиль</button>
+      </section>
+      <section class="notifications-card">
+        <h3>🔔 Уведомления</h3>
+        <div id="notifications"></div>
+      </section>
+      <section class="notifications-card">
+        <h3>🛡️ Admin output</h3>
+        <pre id="admin"></pre>
+      </section>
+    </aside>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>
