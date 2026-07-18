@@ -8,6 +8,7 @@ let activeItemId = '';
 const toastStack = document.createElement('div');
 toastStack.className = 'toast-stack';
 document.body.appendChild(toastStack);
+if (localStorage.theme === 'dark') document.body.classList.add('dark');
 
 const $ = id => document.getElementById(id);
 const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
@@ -38,6 +39,7 @@ function showComposer(nextMode) {
 }
 
 
+function toggleTheme() { document.body.classList.toggle('dark'); localStorage.theme = document.body.classList.contains('dark') ? 'dark' : 'light'; }
 async function logout() {
   try { await api('/api/logout', { method: 'POST' }); } catch {}
   localStorage.removeItem('token');
@@ -94,7 +96,7 @@ async function init() {
   $('profileMeta').textContent = `@${me.username} · ${me.role}`;
   $('bio').value = me.bio || '';
   document.querySelector('.profile-card .avatar').textContent = initials(me.displayName);
-  await Promise.all([loadChats(), loadChannels(), loadNotifications()]);
+  await Promise.all([loadChats(), loadChannels(), loadNotifications(), loadContacts()]);
 }
 async function saveProfile() {
   me = await api('/api/profile', { method: 'PATCH', body: JSON.stringify({ displayName: me.displayName, bio: bio.value }) });
@@ -107,8 +109,26 @@ async function findUsers() {
     <article class="item">
       <div class="item-title"><span>${escapeHtml(user.displayName)}</span><span>👤</span></div>
       <div class="muted">@${escapeHtml(user.username)} · ${escapeHtml(user.id)}</div>
+      <div class="inline-actions"><button class="secondary" onclick="requestContact('${user.id}')">+ Контакт</button><button onclick="startDirectChat('${user.id}')">Написать</button></div>
     </article>`).join('');
 }
+
+async function loadContacts() {
+  const list = await api('/api/contacts');
+  contacts.innerHTML = list.map(contact => `
+    <article class="item">
+      <div class="item-title"><span>${escapeHtml(contact.user?.displayName || 'Пользователь')}</span><span>${escapeHtml(contact.status)}</span></div>
+      <div class="muted">@${escapeHtml(contact.user?.username || '')}</div>
+      <div class="inline-actions">
+        ${contact.status === 'pending' && contact.addresseeId === me.id ? `<button onclick="respondContact('${contact.id}','accepted')">✅ Принять</button><button class="secondary" onclick="respondContact('${contact.id}','rejected')">Отклонить</button>` : ''}
+        ${contact.status === 'accepted' ? `<button onclick="startDirectChat('${contact.user.id}')">💬 Написать</button>` : ''}
+      </div>
+    </article>`).join('') || '<p class="muted">Контактов пока нет 👋</p>';
+}
+async function requestContact(targetUserId) { await api('/api/contacts', { method: 'POST', body: JSON.stringify({ targetUserId }) }); toast('👥 Запрос отправлен'); loadContacts(); }
+async function respondContact(contactId, status) { await api(`/api/contacts/${contactId}`, { method: 'PATCH', body: JSON.stringify({ status }) }); toast('✅ Контакт обновлён'); loadContacts(); }
+async function startDirectChat(targetUserId) { const chat = await api('/api/direct-chats', { method: 'POST', body: JSON.stringify({ targetUserId }) }); await loadChats(); openChat(chat.id); showSection('chatsPanel'); }
+
 async function createChat() {
   await api('/api/chats', { method: 'POST', body: JSON.stringify({ title: chatTitle.value, memberIds: chatMembers.value.split(',').map(x => x.trim()).filter(Boolean) }) });
   chatTitle.value = ''; chatMembers.value = '';

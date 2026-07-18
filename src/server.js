@@ -21,8 +21,12 @@ async function api(req, res, path) {
     if (path === '/api/me' && req.method === 'GET') return json(res, 200, u);
     if (path === '/api/profile' && req.method === 'PATCH') return json(res, 200, await store.updateProfile(u.id, b));
     if (path.startsWith('/api/users') && req.method === 'GET') return json(res, 200, store.searchUsers(new URL(req.url, 'http://x').searchParams.get('q') || ''));
+    if (path === '/api/contacts' && req.method === 'GET') return json(res, 200, store.contacts(u.id));
+    if (path === '/api/contacts' && req.method === 'POST') return json(res, 201, await store.requestContact(u.id, b.targetUserId));
+    if (path.match(/^\/api\/contacts\/[^/]+$/) && req.method === 'PATCH') return json(res, 200, await store.respondContact(u.id, path.split('/')[3], b.status));
     if (path === '/api/chats' && req.method === 'GET') return json(res, 200, store.chats(u.id));
     if (path === '/api/chats' && req.method === 'POST') return json(res, 201, await store.createChat(u.id, b));
+    if (path === '/api/direct-chats' && req.method === 'POST') return json(res, 201, await store.directChat(u.id, b.targetUserId));
     if (path.match(/^\/api\/chats\/[^/]+\/messages$/) && req.method === 'GET') return json(res, 200, store.messages(u.id, path.split('/')[3]));
     if (path.match(/^\/api\/chats\/[^/]+\/messages$/) && req.method === 'POST') return json(res, 201, await store.sendMessage(u.id, path.split('/')[3], b));
     if (path.match(/^\/api\/messages\/[^/]+$/) && req.method === 'PATCH') return json(res, 200, await store.editMessage(u.id, path.split('/')[3], b));

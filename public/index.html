@@ -26,7 +26,8 @@
   <main id="app" class="app-shell hidden">
     <aside class="sidebar">
       <header class="sidebar-header">
-        <button class="icon-button" onclick="logout()">⎋</button>
+        <button class="icon-button" onclick="logout()" title="Выйти">⎋</button>
+        <button class="icon-button" onclick="toggleTheme()" title="Тема">◐</button>
         <div>
           <strong>Social Network</strong>
           <span id="me" class="muted"></span>
@@ -38,6 +39,8 @@
         <input id="search" oninput="findUsers()" placeholder="Поиск людей" />
       </div>
       <div id="users" class="people-list"></div>
+      <h3 class="side-title">👥 Контакты</h3>
+      <div id="contacts" class="people-list"></div>
 
       <nav class="tabs">
         <button class="active" onclick="showSection('chatsPanel')">💬 Чаты</button>

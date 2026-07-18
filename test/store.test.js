@@ -47,3 +47,18 @@ test('supports message editing, deletion, reactions, replies and logout', async 
   await store.logout(login.token);
   assert.equal(store.userByToken(login.token), undefined);
 });
+
+test('supports contacts and direct chats', async () => {
+  const store = new Store('/tmp/social-network-test-' + Date.now() + '-4.json');
+  await store.load();
+  const alice = await store.register({ username: 'alice_four', password: 'password1', displayName: 'Alice' });
+  const bob = await store.register({ username: 'bob_four', password: 'password2', displayName: 'Bob' });
+  const request = await store.requestContact(alice.id, bob.id);
+  assert.equal(request.status, 'pending');
+  await store.respondContact(bob.id, request.id, 'accepted');
+  assert.equal(store.contacts(alice.id)[0].status, 'accepted');
+  const first = await store.directChat(alice.id, bob.id);
+  const second = await store.directChat(alice.id, bob.id);
+  assert.equal(first.id, second.id);
+  assert.equal(first.type, 'direct');
+});

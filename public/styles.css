@@ -105,3 +105,9 @@ a { color: var(--blue-dark); font-weight: 800; }
 .toast-stack { position: fixed; right: 18px; bottom: 18px; display: grid; gap: 10px; z-index: 50; }
 .toast { padding: 12px 14px; border-radius: 16px; color: white; background: linear-gradient(135deg, var(--blue), var(--violet)); box-shadow: var(--shadow); }
 @media (max-width: 780px) { .reply-preview { grid-column: auto; } }
+
+body.dark { --bg: #101827; --panel: rgba(24, 34, 52, 0.88); --panel-solid: #182234; --line: #2c3b55; --text: #edf5ff; --muted: #9fb0c8; background: radial-gradient(circle at 10% 10%, rgba(42, 171, 238, 0.18), transparent 28%), linear-gradient(135deg, #0b1220 0%, #111827 100%); }
+body.dark input, body.dark textarea, body.dark select, body.dark .item, body.dark .message-bubble, body.dark .post-card { background: rgba(17, 24, 39, 0.86); color: var(--text); }
+.side-title { margin: 16px 4px 8px; font-size: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+.inline-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.inline-actions button { padding: 7px 10px; border-radius: 999px; font-size: 12px; box-shadow: none; }
